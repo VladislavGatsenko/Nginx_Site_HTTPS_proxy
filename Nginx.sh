@@ -1,13 +1,17 @@
 # Установка Nginx 
-sudo curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor  && \
-sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null && \
+sudo curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null && \
 sudo gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg && \
 sudo echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/debian bullseye nginx" | sudo tee /etc/apt/sources.list.d/nginx.list && \
 sudo echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | sudo tee /etc/apt/preferences.d/99nginx && \
 sudo apt update && \
+sudo wget http://ftp.ru.debian.org/debian/pool/main/o/openssl/libssl1.1_1.1.1n-0+deb11u3_amd64.deb && \
+sudo dpkg -i libssl1.1_1.1.1n-0+deb11u3_amd64.deb && \
+sudo rm libssl1.1_1.1.1n-0+deb11u3_amd64.deb && \
 sudo apt install -y nginx && \
-sudo sed -i 's/listen [::]:80 default_server;/#listen [::]:80 default_server;/' /etc/nginx/sites-available/default && \
-sudo sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/' /etc/nginx/nginx.conf && \
+mkdir -m 777 -p /etc/nginx/sites-available /etc/nginx/sites-enabled /var/www/iotserv.ru
+sudo sed -i 32i\ 'include /etc/nginx/sites-enabled/*;' /etc/nginx/nginx.conf && \
+sudo nginx -t && \
+sudo service nginx reload && \
 sudo systemctl restart nginx
 
 
@@ -128,6 +132,8 @@ server {
   
   location / {
 	proxy_pass http://127.0.0.1:1880;
+	proxy_set_header Connection "upgrade";
+   	proxy_set_header Upgrade $http_upgrade;
 	proxy_set_header Host $host;
 	proxy_set_header X-Real-IP $remote_addr;
 	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
